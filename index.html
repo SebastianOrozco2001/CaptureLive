@@ -19,14 +19,17 @@
       position: relative;
       width: 100vw;
       height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
     video, canvas {
-      position: absolute;
+      position: absolute; /* Asegura que se posicionen dentro del contenedor */
       top: 0;
       left: 0;
-      width: 100%;
+      width: 100%; /* Ocupan todo el contenedor inicialmente */
       height: 100%;
-      object-fit: cover;
+      object-fit: contain; /* Ajusta el video/canvas al contenedor manteniendo su relación de aspecto */
     }
     .loading {
       position: absolute;
@@ -53,6 +56,11 @@
       cursor: pointer;
       z-index: 10;
     }
+    @media (max-width: 768px) {
+      #startCamera {
+        top: 20px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -72,8 +80,18 @@
 
     startCameraButton.addEventListener('click', async () => {
       try {
-        // Solicitar acceso a la cámara
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        let videoConstraints = { video: true };
+
+        // Detectar si el usuario está en un dispositivo móvil (una forma sencilla pero no infalible)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          // Intentar usar la cámara trasera
+          videoConstraints = { video: { facingMode: 'environment' } };
+        }
+
+        // Solicitar acceso a la cámara con las restricciones configuradas
+        const stream = await navigator.mediaDevices.getUserMedia(videoConstraints);
         video.srcObject = stream;
         startCameraButton.style.display = 'none';
         loading.style.display = 'block';
@@ -86,7 +104,18 @@
           loading.style.display = 'none';
           console.log('✅ Modelo COCO-SSD cargado.');
 
-          const clasesInteres = ['bottle', 'cup', 'book']; // Clases para reciclaje
+          const clasesInteres = [
+            'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 'train', 'truck', 'boat',
+            'traffic light', 'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird', 'cat',
+            'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'backpack',
+            'umbrella', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+            'kite', 'baseball bat', 'baseball glove', 'skateboard', 'surfboard', 'tennis racket',
+            'bottle', 'wine glass', 'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+            'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake', 'chair',
+            'couch', 'potted plant', 'bed', 'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+            'keyboard', 'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'book',
+            'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+          ]; // Todas las clases de COCO-SSD
 
           const detect = async () => {
             const predictions = await model.detect(video);
@@ -100,7 +129,7 @@
 
                 ctx.fillStyle = 'lime';
                 ctx.font = '16px Arial';
-                ctx.fillText(`${pred.class} (${(pred.score * 100).toFixed(1)}%)`, 
+                ctx.fillText(`${pred.class} (${(pred.score * 100).toFixed(1)}%)`,
                   pred.bbox[0], pred.bbox[1] > 20 ? pred.bbox[1] - 5 : 10);
               }
             });
@@ -112,6 +141,7 @@
         });
       } catch (error) {
         alert('Error al acceder a la cámara: ' + error.message);
+        console.error('Error al acceder a la cámara:', error);
       }
     });
   </script>

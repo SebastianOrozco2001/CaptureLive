@@ -72,6 +72,7 @@
 
     startCameraButton.addEventListener('click', async () => {
       try {
+        // Solicitar acceso a la cámara
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         video.srcObject = stream;
         startCameraButton.style.display = 'none';
